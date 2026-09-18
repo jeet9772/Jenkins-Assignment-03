@@ -1,1 +1,17 @@
-
+Assignment - 03 
+ 
+Perform CI checks on three Repositories using Jenkins, store reports, manage artifacts, and set up failure notifications. 
+ 
+API Repositories: 
+ 
+- Python:- https://github.com/OT-MICROSERVICES/attendance-api 
+- GoLang:- https://github.com/OT-MICROSERVICES/employee-api 
+- Java:- https://github.com/opstree/spring3hibernate.git 
+ 
+Jenkins Freestyle Jobs: 
+Create separate jobs for each check. 
+Configure to pull repositories from GitHub. 
+Implement Generic & Advance CI Checks (eg: Credential Scanning, Unit Testing, Code Coverage, Dependency, etc.) 
+Store and access reports within Jenkins. 
+Choose local or remote storage for artifacts. 
+Configure email, Slack, notifications on CI check failures. 
