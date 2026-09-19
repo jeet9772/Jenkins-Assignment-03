@@ -1,7 +1,7 @@
 
 # CI/CD Assignment 3 – Multi-Language CI Pipelines in Jenkins
 
-**Submitted by Devashish Sathawane**
+**Submitted by Jeetendra singh. ####
 
 Set up CI checks for three repositories (Python, Go, Java), each with its own Jenkins Freestyle job - running linting, unit tests, coverage, security/dependency scans, publishing the reports inside Jenkins, archiving artifacts, and sending Slack + Email alerts whenever a build fails.
 
@@ -16,6 +16,10 @@ Java – spring3hibernate (Opstree)
 ### Installed the Jenkins plugins needed for reporting and notifications
 
 Installed HTML Publisher (to view coverage/scan reports inside Jenkins), Email Extension Template, Slack Notification, and Config File Provider.
+
+
+<img width="1440" height="900" alt="Screenshot 2026-09-19 at 10 38 58 PM" src="https://github.com/user-attachments/assets/be553ce0-adeb-4b4a-b8f6-566279b38bc7" />
+
 
 ### Verified all CLI tools are available on the Jenkins agent
 
