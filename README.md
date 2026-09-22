@@ -25,6 +25,10 @@ Installed HTML Publisher (to view coverage/scan reports inside Jenkins), Email E
 
 Before building the jobs, confirmed every tool each stack needs is actually installed and working on the node - Python (flake8, pytest, bandit, pip-audit), Go (staticcheck, gosec, govulncheck), and Java (Maven, JDK) - since a missing tool would fail every build regardless of the Jenkins config.
 
+
+<img width="1440" height="900" alt="Screenshot 2026-09-22 at 2 53 11 PM" src="https://github.com/user-attachments/assets/4ea8f22c-083d-4495-b34a-c6b6fdf8e9a1" />
+
+
 ### Added the GitHub credential
 
 Added a `github-creds` credential in Jenkins so all three jobs can pull from GitHub using the same reusable credential ID.
