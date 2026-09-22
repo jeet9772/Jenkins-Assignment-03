@@ -33,6 +33,11 @@ Before building the jobs, confirmed every tool each stack needs is actually inst
 
 Added a `github-creds` credential in Jenkins so all three jobs can pull from GitHub using the same reusable credential ID.
 
+
+
+<img width="1440" height="900" alt="Screenshot 2026-09-22 at 3 17 47 PM" src="https://github.com/user-attachments/assets/1f394580-4547-4c63-8eec-83ac7e983529" />
+
+
 ## Slack Integration
 
 ### Added the Jenkins CI app to Slack
