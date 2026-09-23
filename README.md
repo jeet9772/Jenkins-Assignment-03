@@ -44,6 +44,9 @@ Added a `github-creds` credential in Jenkins so all three jobs can pull from Git
 
 Installed the Jenkins CI app from the Slack App Directory and pointed it at the `#jenkins-ci-alerts` channel, where all three jobs' notifications will land.
 
+<img width="975" height="520" alt="650442139-e59cd46e-9cf2-4b58-8218-3025fcd40997" src="https://github.com/user-attachments/assets/fb2dac89-bc29-4a86-a3bd-8a47bf33da96" />
+
+
 ### Added the Slack token as a Jenkins credential
 
 Stored the Slack bot token as a `slack-token` secret text credential so Jenkins can authenticate to Slack without the token sitting in plain job config.
