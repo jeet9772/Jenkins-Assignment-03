@@ -1,149 +1,127 @@
+# CI/CD Assignment – Multi-Language Jenkins Pipelines
 
-# CI/CD Assignment 3 – Multi-Language CI Pipelines in Jenkins
+**Submitted by:** Jeetandra
 
-**Submitted by Jeetendra singh. ####
+Set up CI checks for three repositories (Python, Go, Java), each with its own set of Jenkins Freestyle jobs — running security/dependency scans, linting, unit tests with coverage, publishing reports inside Jenkins, archiving artifacts, and sending Slack + Email alerts on every failure and recovery.
 
-Set up CI checks for three repositories (Python, Go, Java), each with its own Jenkins Freestyle job - running linting, unit tests, coverage, security/dependency scans, publishing the reports inside Jenkins, archiving artifacts, and sending Slack + Email alerts whenever a build fails.
+## Environment
 
-## Repositories:
+* Jenkins `2.568.3` running on an AWS EC2 instance (`ubuntu@ip-172-31-47-183`), reachable at `18.207.171.62:8080`
+* `JAVA_HOME` set to `/usr/lib/jvm/java-8-openjdk-amd64` for the Java jobs
 
-Python – attendance-api (OT-Microservices)
-Go – employee-api (OT-Microservices)
-Java – spring3hibernate (Opstree)
+## Repositories
 
-## Setup
+| Language | Repository                                     | Branch    |
+| -------- | ----------------------------------------------- | --------- |
+| Python   | `OT-MICROSERVICES/attendance-api`               | `main`    |
+| Go       | `OT-MICROSERVICES/employee-api`                 | `main`    |
+| Java     | `opstree/spring3hibernate`                      | `master`  |
 
-### Installed the Jenkins plugins needed for reporting and notifications
+Each repo got 4 Freestyle jobs, all following the same naming pattern:
 
-Installed HTML Publisher (to view coverage/scan reports inside Jenkins), Email Extension Template, Slack Notification, and Config File Provider.
+* `<name>-credential-scan`
+* `<name>-dependency-scan`
+* `<name>-lint`
+* `<name>-unit-test-coverage`
 
+12 jobs in total, all visible on the Jenkins dashboard:
 
-<img width="1440" height="900" alt="Screenshot 2026-09-19 at 10 38 58 PM" src="https://github.com/user-attachments/assets/be553ce0-adeb-4b4a-b8f6-566279b38bc7" />
+![Jenkins dashboard showing all 12 jobs](screenshots/jenkins-dashboard-all-jobs.png)
 
+At the time of this screenshot, coverage stood at **70.43%** for `py-attendance-unit-test-coverage`, **46.89%** for `go-employee-unit-test-coverage`, and **6.90%** for `java-spring3-unit-test-coverage` — a good reminder of how far apart three "started around the same time" pipelines can end up on test coverage.
 
-### Verified all CLI tools are available on the Jenkins agent
+## Checks run per job type
 
-Before building the jobs, confirmed every tool each stack needs is actually installed and working on the node - Python (flake8, pytest, bandit, pip-audit), Go (staticcheck, gosec, govulncheck), and Java (Maven, JDK) - since a missing tool would fail every build regardless of the Jenkins config.
+| Job              | Tooling                                         | Key artifact(s)                          |
+| ---------------- | ------------------------------------------------ | ----------------------------------------- |
+| `credential-scan`  | gitleaks                                          | `gitleaks-report.json`                    |
+| `dependency-scan`  | Trivy (Python/Java), govulncheck (Go)             | `trivy-report.json` / `govulncheck-report.txt` |
+| `lint`             | go vet + gofmt (Go), Maven Checkstyle (Java)      | `checkstyle-result.xml`, `gofmt-report.txt` |
+| `unit-test-coverage` | Maven Surefire + JaCoCo (Java), language-native test runners (Go/Python) | JUnit XML, `jacoco.xml`, coverage summary |
 
+Post-build actions on every job: **Archive the artifacts**, **Publish HTML reports** (where applicable), **Publish JUnit test result report**, and **Record code coverage results** for the coverage jobs.
 
-<img width="1440" height="900" alt="Screenshot 2026-09-22 at 2 53 11 PM" src="https://github.com/user-attachments/assets/4ea8f22c-083d-4495-b34a-c6b6fdf8e9a1" />
+## Credentials
 
+Two credentials cover both notification channels, stored once in Jenkins and reused across all 12 jobs:
 
-### Added the GitHub credential
+![Jenkins global credentials store](screenshots/jenkins-credentials-store.png)
 
-Added a `github-creds` credential in Jenkins so all three jobs can pull from GitHub using the same reusable credential ID.
-
-
-
-<img width="1440" height="900" alt="Screenshot 2026-09-22 at 3 17 47 PM" src="https://github.com/user-attachments/assets/1f394580-4547-4c63-8eec-83ac7e983529" />
-
+* `gmail-smtp` — a Gmail App Password so Jenkins can send mail through Gmail's SMTP server
+* `slack-bot-token` — the Slack bot token used by the Jenkins Slack Notification plugin
 
 ## Slack Integration
 
-### Added the Jenkins CI app to Slack
+Created a Slack app (`jenkins-ci`) in a dedicated workspace, with just the two bot scopes it actually needs to post messages:
 
-Installed the Jenkins CI app from the Slack App Directory and pointed it at the `#jenkins-ci-alerts` channel, where all three jobs' notifications will land
+![Slack Bot Token Scopes — chat:write and chat:write.public](screenshots/slack-bot-token-scopes.png)
 
-<img width="1440" height="900" alt="Screenshot 2026-09-23 at 2 22 51 PM" src="https://github.com/user-attachments/assets/7bae2ed8-2ab8-470b-892d-39639f688e09" />
+Installed it to the workspace:
 
+![Installing the jenkins-ci Slack app](screenshots/slack-app-install-allow.png)
 
+Added the bot to a dedicated `#jenkins-alert` channel:
 
-### Added the Slack token as a Jenkins credential
+![jenkins-ci app added to #jenkins-alert](screenshots/slack-jenkins-alert-channel-setup.png)
 
-Stored the Slack bot token as a `slack-token` secret text credential so Jenkins can authenticate to Slack without the token sitting in plain job config.
+Configured the Slack plugin in Jenkins' global settings (workspace, credential, default channel) and confirmed the connection:
 
-### Configured Slack in Jenkins global settings and tested the connection
+![Jenkins global Slack config — Test Connection: Success](screenshots/jenkins-slack-test-connection.png)
 
-Set the workspace, credential, and default channel, then ran "Test Connection" - came back Success.
+Per job, Slack notifications are set to fire on every failure and once the build is back to normal:
 
-Confirmed the test message actually landed in Slack.
+![Slack notification options on a job's post-build config](screenshots/py-attendance-slack-notifications-config.png)
 
 ## Email Integration
 
-### Added the Gmail SMTP credential
+Added the `gmail-smtp` credential and configured Extended E-mail Notification against `smtp.gmail.com:465` (SSL), sending failure/recovery alerts to a dedicated inbox. Example of a recovery email landing correctly:
 
-Added a `gmail-smtp` credential (Gmail App Password) so Jenkins can send mail through Gmail's SMTP server.
+![Email notification: py-attendance-dependency-scan Build #4 Fixed](screenshots/email-py-attendance-fixed.png)
 
-### Configured Extended E-mail Notification
+## Verifying the alerting actually works
 
-Set SMTP server to `smtp.gmail.com`, port 465 with SSL, using the Gmail SMTP credential.
+Rather than trust the config on faith, I let real builds fail and watched both channels report it consistently.
 
-### Sent a test email to confirm it works end to end
+### Python — `py-attendance-dependency-scan`
 
-Test email landed in the inbox, confirming the SMTP setup is good before wiring it into the jobs.
+Builds #1–#3 failed, then #4 passed once the underlying issue was fixed. The job's build history shows the failing run:
 
-## Built the Three Freestyle Jobs
+![py-attendance-dependency-scan build history](screenshots/py-attendance-dependency-scan-build-history.png)
 
-Created one job per repo, all pointed at their GitHub repo via the shared `github-creds` credential, each with build steps for linting/testing/coverage/security scanning specific to its language, HTML Publisher steps to expose the reports in the Jenkins UI, archived artifacts, JUnit result publishing, and both Email and Slack post-build notifications set to fire on failure (and on "back to normal").
+Slack picked up the same failure in real time:
 
-All three jobs created and visible on the dashboard:
+![Slack: py-attendance-dependency-scan #3 Still Failing](screenshots/slack-py-attendance-still-failing.png)
 
-* `ci-attendance-api-python`
-* `ci-employee-api-golang`
-* `ci-spring3hibernate-java`
+...and the recovery on the next build:
 
-## Python Job – ci-attendance-api-python
+![Slack: py-attendance-dependency-scan #4 Success](screenshots/slack-py-attendance-success.png)
 
-### Verified the failure notification pipeline works
+...which matches the "Fixed" email above.
 
-Deliberately let several early builds fail so I could confirm the alerting actually fires correctly, not just on a lucky first pass. Inbox shows builds #11 through #14 as "Still Failing", then #15 as "Fixed" - confirming Jenkins correctly distinguishes a repeat failure from a recovery.
+### Go — `go-employee-dependency-scan`
 
-The same sequence shows up in Slack in real time - matching what the email notifications reported.
+Same pattern: early builds failed, then recovered.
 
-### Job dashboard - reports, artifacts, and trend
+![go-employee-dependency-scan build history](screenshots/go-employee-dependency-scan-build-history.png)
 
-Once green, the job page shows the published HTML reports (linting + security scan), the last successful artifacts, and a test result trend graph - visibly going from mostly-failing (red) in early builds to fully passing (green) once the fixes landed.
+Slack again confirms the recovery:
 
-## Go Job – ci-employee-api-golang
+![Slack: go-employee-dependency-scan #3 Success](screenshots/slack-go-employee-success.png)
 
-### Failure and fix notifications by email
+### Java — `java-spring3-credential-scan`
 
-Build #6 failed, and the email came through immediately.
+The credential scan job cycled through a few failures before settling, and the email plugin correctly reported the final recovery:
 
-Build #7 then fixed it, and Jenkins sent the "Fixed" email automatically.
+![Email: java-spring3-credential-scan Build #5 Fixed](screenshots/email-java-spring3-credential-scan-fixed.png)
 
-### Same failure/recovery confirmed in Slack
-
-Slack shows "#6 Still Failing" followed by "#7 Back to normal" - Jenkins' Slack plugin phrases a recovery as "back to normal" rather than "fixed", which is worth noting since the email plugin uses different wording for the same event.
-
-### Job dashboard - coverage, security, and full artifact set
-
-The Go job publishes both a Go Coverage Report and a GoSec Security Report as HTML, and archives everything:
-
-* `coverage-summary.txt`
-* `coverage.html`
-* `coverage.out`
-* `go-test-report.json`
-* `gosec-report.html`
-* `govulncheck.txt`
-* `junit.xml`
-* `staticcheck.txt`
-* `test-output.txt`
-
-This gives full visibility into test results, coverage, static analysis, and vulnerability scanning for every build.
-
-## Java Job – ci-spring3hibernate-java
-
-### Failure and fix notifications by email
-
-Build #8 failed and triggered the failure email.
-
-Build #9 fixed it.
-
-### Same sequence confirmed in Slack
-
-"#7 Still Failing", "#8 Still Failing", then "#9 Success" - consistent with the emails.
-
-### Job dashboard - unit test artifacts and trend
-
-The Java job archives the Maven unit test outputs (`EmployeeBeanTest`, `EmployeeServiceImplTest` and their XML results) and shows a clean test result trend once stable - flat green across the last few builds with zero failures.
+`java-spring3-dependency-scan`, by contrast, was still red at the time the dashboard screenshot above was taken — a good example of the dashboard reflecting real, current state rather than a cherry-picked "everything passes" run.
 
 ## Summary
 
-| Job                        | Language | Checks run                                          | Reports/Artifacts                                      |
-| -------------------------- | -------- | --------------------------------------------------- | ------------------------------------------------------ |
-| `ci-attendance-api-python` | Python   | flake8, pytest, pytest-cov, bandit, pip-audit       | HTML reports, test trend                               |
-| `ci-employee-api-golang`   | Go       | staticcheck, gosec, govulncheck, go test + coverage | Coverage HTML, GoSec HTML, JUnit XML, raw scan outputs |
-| `ci-spring3hibernate-java` | Java     | Maven unit tests                                    | JUnit test artifacts, test trend                       |
+| Job                        | Language | Checks run                                    | Notifications                        |
+| -------------------------- | -------- | ----------------------------------------------- | -------------------------------------- |
+| `py-attendance-*`          | Python   | gitleaks, Trivy, unit tests + coverage, lint     | Slack `#jenkins-alert` + email, on failure & recovery |
+| `go-employee-*`            | Go       | gitleaks, govulncheck, go vet/gofmt, unit tests + coverage | Slack `#jenkins-alert` + email, on failure & recovery |
+| `java-spring3-*`           | Java     | gitleaks, Trivy, Maven Checkstyle, Surefire + JaCoCo | Slack `#jenkins-alert` + email, on failure & recovery |
 
-All three jobs are configured with Slack and Email notifications that fire on every failure and on recovery, verified by intentionally letting early builds fail and confirming both channels reported it correctly and consistently.
+All three pipelines are wired to the same Slack channel and email inbox, verified by intentionally letting builds fail and confirming both channels reported the failure and the eventual recovery consistently with each other.
