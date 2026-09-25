@@ -14,4 +14,4 @@ Configure to pull repositories from GitHub.
 Implement Generic & Advance CI Checks (eg: Credential Scanning, Unit Testing, Code Coverage, Dependency, etc.) 
 Store and access reports within Jenkins. 
 Choose local or remote storage for artifacts. 
-Configure email, Slack, notifications on CI check failures. 
+Configure email, Slack, notifications on CI check failures.
