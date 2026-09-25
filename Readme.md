@@ -120,4 +120,4 @@ Shows the Maven dependency tree resolution for the Java project (Spring Framewor
 
 **13. Java – Code-Coverage Console Output (Build #19)**
 ![Screenshot 13](screenshot/screenshot-13.png)
-Shows the Java Code-Coverage job verifying the presence of JaCoCo execution data and reports, along with the Surefire test report files, confirming that coverage data is being generated correctly. Build finished with `SUCCESS`, and a Slack notification check was performed against the previous completed build.
+Shows the Java Code-Coverage job verifying the presence of JaCoCo execution data and reports, along with the Surefire test report files, confirming that coverage data is being generated correctly. Build finished with `SUCCESS`, and a Slack notification check was performed against the previous completed build. 1
